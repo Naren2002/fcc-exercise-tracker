@@ -12,32 +12,56 @@ app.use(bodyParser.urlencoded({extended: false}));
 
 mongoose.connect(process.env.MONGO_URI).catch(err => console.log(err));
 
+// Schemas
+
+let exerciseSchema = new mongoose.Schema({
+  description: String,
+  duration: Number,
+  date: Date
+})
+
+let userExerciseSchema = new mongoose.Schema({
+  name: String,
+  count: Number,
+  log: [exerciseSchema]
+})
+
+let exerciseModel = mongoose.model("UserExercise", userExerciseSchema);
+
 // TODO: Replace the Objects with Mongoose Models
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
-let userExerciseData = {
-
-}
-
-let userId = 0
-
 app.post("/api/users", function(req, res){
   let userName = (req.body.username);
   userId += 1;
-  userData[userId] = {
-      _id: userId,
-      username: userName
-  }
+  let newUser = new exerciseModel({
+    name: userName,
+    count: 0,
+    log: []
+  })
 
-  res.json(userData[userId]);
+  // console.log("NEW USER", newUser);
+  newUser.save().then((savedUser, err) => {
+    // console.log("SAVED USER", savedUser);
+    
+    res.json({
+      _id: savedUser._id,
+      name: savedUser.name
+    });
+  });
 
 });
 
 app.get("/api/users", function(req, res){
-  res.json(userData);
+
+  exerciseModel.find({}).select("name __v").then((userData, err) => {
+    if(err) return console.log(err);
+    console.log(userData);
+    res.json(userData);
+  })
 });
 
 app.post("/api/users/:_id/exercises", function(req, res){
